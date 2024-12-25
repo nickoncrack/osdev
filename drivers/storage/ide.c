@@ -46,3 +46,22 @@ int ata_write_sector(uint8_t drive, uint32_t lba, const uint8_t *buffer) {
 
     return 0;
 }
+
+// returns the drive size in KiB
+uint32_t get_drive_size(uint8_t drive) {
+    uint16_t buffer[256];
+    uint32_t ret = 0;
+
+    ata_polling();
+    ata_select_device(drive, 0);
+    
+    outb(ATA_PRIMARY_IO_BASE + 7, ATA_CMD_IDENTIFY);
+    ata_polling();
+
+    for (int i = 0; i < 256; i++) {
+        buffer[i] = inw(ATA_PRIMARY_IO_BASE);
+    }
+
+    ret = (buffer[60] | (buffer[61] << 16)) / 2;
+    return ret;
+}
