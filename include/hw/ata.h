@@ -10,3 +10,4 @@
 
 int ata_read_sector(uint8_t drive, uint32_t lba, uint8_t* buffer);
 int ata_write_sector(uint8_t drive, uint32_t lba, const uint8_t *buffer);
+uint32_t get_drive_size(uint8_t drive);
