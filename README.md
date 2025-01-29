@@ -13,11 +13,9 @@
 + Text rendering with custom font support (using [ssfn.h](https://gitlab.com/bztsrc/scalable-font2/-/blob/master/ssfn.h?ref_type=heads)) ✅
 + Simple ATA driver with sector I/O ✅
 + Custom block based filesystem ([skbd-fs](https://github.com/dtxc/skbd-fs)) ✅
-+ Keyboard and mouse drivers ❌
-+ Usermode and system calls ❌
-+ Userspace memory allocator ❌
 + Multitasking and ELF loader ❌
-+ GUI and userspace utility programs ❌
++ Keyboard and mouse drivers ❌
++ Graphical interface ❌
 
 <br>
 
