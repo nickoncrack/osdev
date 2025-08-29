@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <assert.h>
 #include <string.h>
 
 #include <asm/io.h>
@@ -55,15 +55,13 @@ static uint32_t first_frame() {
     }
 }
 
+
 void alloc_frame(page_t *page, int kernel, int writable) {
     if (page->frame != 0) {
         return;
     } else {
         uint32_t idx = first_frame();
-        if (idx == (uint32_t) - 1) {
-            printf("no free frames");
-            while (1) asm("hlt");
-        }
+        assert(idx != (uint32_t) - 1);
         set_frame(idx);
         page->present = 1;
         page->rw = (writable) ? 1 : 0;
@@ -82,7 +80,8 @@ void free_frame(page_t *page) {
     }
 }
 
-void map_memory(uint32_t addr, uint32_t vaddr, uint32_t size, pagedir_t *dir) {
+
+void map_memory(uint32_t addr, uint32_t vaddr, uint32_t size, pagedir_t *dir, int use_existing_phys, uint8_t user) {
     if (size < 0x1000) {
         size = 0x1000;
     }
@@ -95,10 +94,16 @@ void map_memory(uint32_t addr, uint32_t vaddr, uint32_t size, pagedir_t *dir) {
 
         page_t *page = get_page(page_vaddr, 1, dir);
 
-        page->present = 1;
-        page->rw = 1;
-        page->user = 0;
-        page->frame = page_addr / 0x1000;
+        if (!page->present) {
+            if (use_existing_phys) {
+                page->present = 1;
+                page->rw = 1;
+                page->user = user;
+                page->frame = page_addr / 0x1000;
+            } else {
+                alloc_frame(page, 1, 1);
+            }
+        }
     }
 
     switch_page_dir(dir);
@@ -119,6 +124,8 @@ void unmap_memory(uint32_t vaddr, uint32_t size, pagedir_t *dir) {
         page->present = 0;
         page->rw = 0;
         page->user = 0;
+
+        clear_frame(page->frame);
         page->frame = 0;
     }
 
@@ -126,7 +133,7 @@ void unmap_memory(uint32_t vaddr, uint32_t size, pagedir_t *dir) {
 }
 
 void init_paging() {
-    uint32_t mem_end = 0x1000000;
+    uint32_t mem_end = 0x2000000;
 
     nframes = mem_end / 0x1000;
     frames = (uint32_t *) kmalloc(INDEX_FROM_BIT(nframes));
@@ -138,11 +145,6 @@ void init_paging() {
     kernel_dir->addr = (uint32_t) kernel_dir->tab_phy;
 
     int i = 0;
-    for (i = KHEAP_START; i < KHEAP_START + KHEAP_INITIAL_SZ; i += 0x1000) {
-        get_page(i, 1, kernel_dir);
-    }
-
-    i = 0;
     while (i < 0x400000) {
         alloc_frame(get_page(i, 1, kernel_dir), 0, 0);
         i += 0x1000;
@@ -152,9 +154,9 @@ void init_paging() {
         alloc_frame(get_page(i, 1, kernel_dir), 0, 0);
     }
 
-    map_memory(LFB_PHYS_ADDR, LFB_VADDR, LFB_SIZE, kernel_dir);
+    map_memory(LFB_PHYS_ADDR, LFB_VADDR, LFB_SIZE, kernel_dir, 1, 1);
 
-    register_interrupt_handler(14, pgf);
+    register_interrupt_handler(0x0E, pgf);
     switch_page_dir(kernel_dir);
 
     kheap = mkheap(KHEAP_START, KHEAP_START + KHEAP_INITIAL_SZ, 0xCFFFF000, 0, 0);
@@ -164,7 +166,16 @@ void init_paging() {
 
 void switch_page_dir(pagedir_t *dir) {
     crt_dir = dir;
+    if (dir->addr == 0) {
+        asm volatile("cli");
+        uint32_t caller = (uint32_t) __builtin_return_address(0);
+        serial_printf("Caller = 0x%x\n", caller);
+
+        for(;;);
+    }
+
     asm volatile("mov %0, %%cr3" :: "r"(dir->addr));
+
     uint32_t cr0;
     asm volatile("mov %%cr0, %0" : "=r"(cr0));
     cr0 |= 0x80000000;
@@ -187,20 +198,17 @@ page_t *get_page(uint32_t addr, int make, pagedir_t *dir) {
     }
 }
 
+// #PF handler
 void pgf(regs_t *regs) {
-    uint32_t addr;
+    asm volatile("cli");
+    
+    uint32_t addr; // fault address
     asm volatile("mov %%cr2, %0" : "=r" (addr));
 
-    // int present = !(regs->err_code & 0x01);
-    // int rw = regs->err_code & 0x2;
-    // int us = regs->err_code & 0x4;
-    // int reserved = regs->err_code & 0x8;
-    // int id = regs->err_code & 0x10;
-
-    serial_printf("page fault at 0x%x, err = %d\n", addr, regs->err_code);
+    serial_printf("Unhandled page fault at 0x%x, err = %d\n", addr, regs->err_code);
 
     while (1) {
-        asm("hlt");
+        asm volatile("hlt");
     }
 }
 
