@@ -35,5 +35,5 @@ void pgf(regs_t *regs);
 void alloc_frame(page_t *page, int kernel, int writable);
 void free_frame(page_t *page);
 pagedir_t *clone_dir(pagedir_t *src);
-void map_memory(uint32_t addr, uint32_t vaddr, uint32_t size, pagedir_t *dir);
+void map_memory(uint32_t addr, uint32_t vaddr, uint32_t size, pagedir_t *dir, int use_existing_phys, uint8_t user);
 void unmap_memory(uint32_t vaddr, uint32_t size, pagedir_t *dir);

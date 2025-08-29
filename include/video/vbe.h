@@ -2,10 +2,6 @@
 
 #include <common.h>
 
-#define LFB_PHYS_ADDR   0xFD000000
-#define LFB_VADDR       0xD0000000 
-#define LFB_SIZE        0x00200000 // 2 mib, enough for 800x600x32
-
 #define SCREEN_WIDTH    800
 #define SCREEN_HEIGHT   600
 

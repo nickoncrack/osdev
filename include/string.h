@@ -2,8 +2,8 @@
 
 #include <common.h>
 
-void memset(void *dst, uint8_t c, int n);
-void memcpy(void *dst, void *src, int num);
+void memset(void *dst, uint8_t c, uint32_t n);
+void memcpy(void *dst, void *src, uint32_t num);
 void memmove(void *dst, void *src, uint32_t n);
 
 int strcpy(char *dst, const char *src);
@@ -13,5 +13,9 @@ int strncmp(char *s, const char *s1, int n);
 int strlen(const char *s);
 
 int itoa(char *dst, int n);
+int ltoa(char *dst, int64_t n);
+int uitoa(char *dst, uint32_t n);
+int ultoa(char *dst, uint64_t n);
 int int2hex(char *dst, uint32_t n);
-int split_string(char *str, char delimiter, char ***tokens);
+
+int split_string(char *str, char delim, char **tokens, int max_tokens);

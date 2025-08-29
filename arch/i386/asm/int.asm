@@ -4,8 +4,8 @@ bits 32
     global isr%1
     isr%1:
         cli
-        push byte 0
-        push %1
+        push dword 0 ; err_code
+        push dword %1 ; int_no
         jmp isr_common_stub
 %endmacro
 
@@ -13,7 +13,7 @@ bits 32
     global isr%1
     isr%1:
         cli
-        push %1
+        push dword %1
         jmp isr_common_stub
 %endmacro
 
@@ -21,8 +21,8 @@ bits 32
     global irq%1
     irq%1:
         cli
-        push byte 0
-        push byte %2
+        push dword 0
+        push dword %2
         jmp irq_common_stub
 %endmacro
 
@@ -61,12 +61,13 @@ ISR_NOERR 30
 ISR_NOERR 31
 
 extern isr_handler
-    
+
 isr_common_stub:
     pusha
-
-    mov ax, ds
-    push eax
+    push ds
+    push es
+    push fs
+    push gs
 
     mov ax, 0x10
     mov ds, ax
@@ -74,17 +75,17 @@ isr_common_stub:
     mov fs, ax
     mov gs, ax
 
+    push esp
     call isr_handler
+    add esp, 4
 
-    pop ebx
-    mov ds, bx
-    mov es, bx
-    mov fs, bx
-    mov gs, bx
+    pop gs
+    pop fs
+    pop es
+    pop ds
 
     popa
     add esp, 8
-    sti
     iret
 
 IRQ 0,  32
@@ -104,13 +105,20 @@ IRQ 13, 45
 IRQ 14, 46
 IRQ 15, 47
 
+; syscall
+IRQ 127, 127
+
 extern irq_handler
+extern irq_enter_debug
 
 irq_common_stub:
-    pusha
+    pusha ; push general purpose registers
 
-    mov ax, ds
-    push eax
+    ; push segment registers
+    push ds
+    push es
+    push fs
+    push gs
 
     mov ax, 0x10
     mov ds, ax
@@ -118,15 +126,15 @@ irq_common_stub:
     mov fs, ax
     mov gs, ax
 
+    push esp
     call irq_handler
+    add esp, 4 ; clean pushed argument
 
-    pop ebx
-    mov ds, bx
-    mov es, bx
-    mov fs, bx
-    mov gs, bx
+    pop gs
+    pop fs
+    pop es
+    pop ds
 
     popa
-    add esp, 8
-    sti
+    add esp, 8 ; remove int_no and err_code
     iret

@@ -1,4 +1,4 @@
-C_SOURCES = $(shell find . -name "*.c")
+C_SOURCES = $(shell find . -name "*.c" -not -path "./fs_generator/*" -not -path "./user/*")
 OBJ_FILES = ${C_SOURCES:.c=.o \
 	arch/i386/boot/entry.o \
 	arch/i386/asm/dt.o \
@@ -12,10 +12,19 @@ KERNELBIN = ./build/kernel.bin
 ISO_ROOT = ./build/iso-root
 ISO = ./build/out/os-image.iso
 
-build: prepare $(ISO)
+.PHONY: user
+
+all: prepare user fs_gen $(ISO)
+
+user:
+	cd user && make
 
 prepare:
 	@mkdir -p ./build/out ./build/iso-root ./build/obj
+
+fs_gen: user
+	cp ./user/out/* ./fs_generator/rootfs/bin/
+	cd fs_generator && make
 
 kernel.bin: ${OBJ_FILES}
 	ld -m elf_i386 -o ./build/$(notdir $@) -Tlinker.ld ./build/obj/entry.o $(shell find ./build/obj/ -name "*.o" ! -name "entry.o")

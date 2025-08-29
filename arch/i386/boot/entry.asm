@@ -17,8 +17,8 @@ mboot:
 
 	dd 0 ; LFB
 	dd 800 ; width
-	dd 600 ; height
-	dd 32  ; bpp
+	dd 600  ; height
+	dd 32   ; bpp
 	
 	times 2 dd 0 ; padding
 

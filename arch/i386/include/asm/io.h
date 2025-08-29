@@ -8,13 +8,20 @@
 #define PIC_SLAVE_CMD  0xA0
 #define PIC_SLAVE_DAT  0xA1
 
-#define PIC_EIO 0x20
+#define PIC_EOI 0x20
 
 #define VGA_CMD 0x3D4
 #define VGA_DAT 0x3D5
 
-#define KEYBOARD_DAT 0x60
-#define KEYBOARD_STATUS 0x64
+#define PS2_READ0       0x20
+#define PS2_WRITE0      0x60
+#define PS2_DAT         0x60
+#define PS2_STATUS      0x64
+#define PS2_WRITE_PORT2 0xD4
+#define PS2_DIS_PORT2   0xA7
+#define PS2_ENB_PORT2   0xA8
+#define PS2_DIS_PORT1   0xAD
+#define PS2_ENB_PORT1   0xAE
 
 #define PIT_SET  0x36
 #define PIT_DAT0 0x40
@@ -38,3 +45,6 @@ int init_serial();
 void serial_putc(char c);
 void serial_puts(char *s);
 void serial_printf(const char *s, ...);
+
+uint32_t read_eflags();
+void write_eflags(uint32_t eflags);

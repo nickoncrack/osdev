@@ -1,6 +1,6 @@
 #include <ssfn.h>
 #include <string.h>
-#include <asm/io.h>
+
 #include <video/vbe.h>
 
 uint32_t *lfb;
@@ -13,11 +13,6 @@ void putpixel(int x, int y, uint32_t color) {
 void init_vbe(struct vbe_mode_info *vbe_info) {
     lfb = (uint32_t *) LFB_VADDR;
 
-    serial_printf(
-        "framebuffer initialized with VA: 0x%x, PA: 0x%x\n",
-        LFB_VADDR, LFB_PHYS_ADDR
-    );
-
     width = vbe_info->width;
     height = vbe_info->height;
     bpp = vbe_info->bpp;
@@ -25,6 +20,13 @@ void init_vbe(struct vbe_mode_info *vbe_info) {
 }
 
 void vesa_puts(char *s) {
+    if (strcmp(s, "\033[H\033[J")) {
+        memset((uint8_t *) lfb, 0, width * height * (bpp / 8));
+        ssfn_dst.x = 1;
+        ssfn_dst.y = 0;
+        return;
+    }
+
     while (*s != '\0') {
         vesa_putc(*s);
         s++;
@@ -50,10 +52,22 @@ void vesa_putc(char c) {
         ssfn_dst.y -= 17;
     }
 
-    // when *s = '\n', ssfn_putc prints a weird unicode instead of a newline.
+    // when *s = '\n', ssfn_putc prints a weird unicode instead of a newline
     if (c == '\n') {
         ssfn_dst.y += 17; // 17 looks perfect for me. the pixels i mean, i am not drake
         ssfn_dst.x = 1;
+    } else if (c == '\b') {
+        if (ssfn_dst.x - 9 <= 1 || ssfn_dst.x == 3 * 9 + 1) {
+            return;
+        }
+
+        ssfn_dst.x -= 9;
+
+        for (int y = 0; y < 17; y++) {
+            for (int x = 0; x < 9; x++) {
+                putpixel(ssfn_dst.x + x, ssfn_dst.y + y, 0x000000);
+            }
+        }
     } else {
         ssfn_putc(c);
     }

@@ -1,13 +1,15 @@
-#include <stdio.h>
+#include <assert.h>
 #include <string.h>
 
 #include <mm/kheap.h>
 #include <mm/paging.h>
 
 heap_t *kheap;
+heap_t *uheap;
 
 extern uint32_t end;
 uint32_t placement_addr = (uint32_t) &end;
+
 
 static int find_smallest_hole(uint32_t size, uint8_t align, heap_t *heap) {
     uint32_t iter = 0;
@@ -45,13 +47,13 @@ static char head_lt(void *a, void *b) {
 }
 
 static void expand(uint32_t size, heap_t *heap) {
-    ASSERT(size > heap->end - heap->start);
+    assert(size > heap->end - heap->start);
 
     if ((size & 0xFFFFF000) != 0) {
         size &= 0xFFFFF000;
         size += 0x1000;
     }
-    ASSERT(heap->start + size <= heap->max);
+    assert(heap->start + size <= heap->max);
 
     uint32_t old = heap->end - heap->start;
     uint32_t i = old;
@@ -64,7 +66,7 @@ static void expand(uint32_t size, heap_t *heap) {
 }
 
 static uint32_t contract(uint32_t size, heap_t *heap) {
-    ASSERT(size < heap->end - heap->start);
+    assert(size < heap->end - heap->start);
 
     if (size & 0x1000) {
         size &= 0x1000;
@@ -136,8 +138,8 @@ void *kcalloc(uint32_t nmemb, uint32_t sz) {
 heap_t *mkheap(uint32_t start, uint32_t end, uint32_t max, uint8_t supervisor, uint8_t ro) {
     heap_t *heap = (heap_t *) kmalloc(sizeof(heap_t));
 
-    ASSERT(start % 0x1000 == 0);
-    ASSERT(end % 0x1000 == 0);
+    assert(start % 0x1000 == 0);
+    assert(end % 0x1000 == 0);
 
     heap->index = place_oarr((void *) start, HEAP_INDEX_SZ, &head_lt);
     start += sizeof(type_t) * HEAP_INDEX_SZ;
@@ -161,6 +163,7 @@ heap_t *mkheap(uint32_t start, uint32_t end, uint32_t max, uint8_t supervisor, u
 
     return heap;
 }
+
 
 void *alloc(uint32_t size, uint8_t align, heap_t *heap) {
     uint32_t new_size = size + sizeof(header_t) + sizeof(footer_t);
@@ -262,7 +265,7 @@ void *alloc(uint32_t size, uint8_t align, heap_t *heap) {
     return (void *) ((uint32_t) blk + sizeof(header_t));
 }
 
-static void free(void *p, heap_t *heap) {
+void free(void *p, heap_t *heap) {
     if (p == 0) {
         return;
     }
@@ -270,8 +273,8 @@ static void free(void *p, heap_t *heap) {
     header_t *head = (header_t *) ((uint32_t)p - sizeof(header_t));
     footer_t *foot = (footer_t *) ((uint32_t)head + head->size - sizeof(footer_t));
 
-    ASSERT(head->magic == HEAP_MAGIC);
-    ASSERT(foot->magic == HEAP_MAGIC);
+    assert(head->magic == HEAP_MAGIC);
+    assert(foot->magic == HEAP_MAGIC);
 
     head->hole = 1;
     char do_add = 1;
@@ -296,7 +299,7 @@ static void free(void *p, heap_t *heap) {
             iter++;
         }
 
-        ASSERT(iter < heap->index.size);
+        assert(iter < heap->index.size);
         rm_oarr(iter, &heap->index);
     }
 

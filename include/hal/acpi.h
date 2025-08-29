@@ -7,6 +7,13 @@
 
 #define ACPI_HEAD_DEF struct ACPISTDHeader header
 
+#define HPET_CAP_ID        0x00
+#define HPET_CONFIG        0x10
+#define HPET_INTR_STATUS   0x20
+#define HPET_COUNTER       0xF0
+#define HPET_TIMER_OFFSET  0x100
+#define HPET_TIMER_SIZE    0x20
+
 struct GenericAddressStructure {
     uint8_t AddressSpace;
     uint8_t BitWidth;
@@ -24,7 +31,7 @@ struct ACPISTDHeader {
     uint8_t checksum;
 
     char OEMID[6];
-    char OEMTableId[8];
+    uint64_t OEMTableID;
 
     uint32_t OEMRevision;
     uint32_t creatorId;
@@ -108,6 +115,20 @@ struct RSDP {
 struct RSDT {
     ACPI_HEAD_DEF;
     uint32_t pointerToOtherSDT[]; // size: (h.length - sizeof(h)) / 4
+} __attribute__((packed));
+
+struct HPET { // HPET Description Table
+    ACPI_HEAD_DEF;
+    uint8_t hardware_rev_id;
+    uint8_t comparator_count : 5;
+    uint8_t counter_size : 1;
+    uint8_t reserved : 1;
+    uint8_t legacy_replacement : 1;
+    uint16_t pci_vendor_id;
+    struct GenericAddressStructure address;
+    uint8_t hpet_number;
+    uint16_t minimum_tick;
+    uint8_t page_protection;
 } __attribute__((packed));
 
 void init_acpi();

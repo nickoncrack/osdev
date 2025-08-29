@@ -34,8 +34,8 @@ void init_idt() {
     outb(PIC_SLAVE_DAT, 0x02);
     outb(PIC_MASTER_DAT, 0x01);
     outb(PIC_SLAVE_DAT, 0x01);
-    outb(PIC_MASTER_DAT, 0x0);
-    outb(PIC_SLAVE_DAT, 0x0);
+    outb(PIC_MASTER_DAT, 0x00);
+    outb(PIC_SLAVE_DAT, 0x00);
 
     set_idt_gate(0,   (uint32_t) isr0,   0x08, 0x8E);
     set_idt_gate(1,   (uint32_t) isr1,   0x08, 0x8E);
@@ -85,6 +85,7 @@ void init_idt() {
     set_idt_gate(45,  (uint32_t) irq13,  0x08, 0x8E);
     set_idt_gate(46,  (uint32_t) irq14,  0x08, 0x8E);
     set_idt_gate(47,  (uint32_t) irq15,  0x08, 0x8E);
+    set_idt_gate(0x7F, (uint32_t) irq127, 0x08, 0x8E);
 
     idt_flush((uint32_t) &idt_ptr);
 }

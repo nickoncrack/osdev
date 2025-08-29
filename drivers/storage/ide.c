@@ -1,5 +1,9 @@
+#include <string.h>
+
 #include <hw/ata.h>
 #include <asm/io.h>
+
+#include <fs/skbdfs.h>
 
 static void ata_select_device(uint8_t drive, uint32_t lba) {
     outb(ATA_PRIMARY_IO_BASE + 6, 0xE0 | (drive << 4) | ((lba >> 24) & 0x0F));
@@ -15,7 +19,7 @@ static void ata_polling() {
     while (inb(ATA_PRIMARY_IO_BASE + 7) & 0x80); // 0x80: busy
 }
 
-int ata_read_sector(uint8_t drive, uint32_t lba, uint8_t *buffer) {
+static int ata_read_sector(uint8_t drive, uint32_t lba, uint8_t *buffer) {
     ata_polling();
     ata_select_device(drive, lba);
     outb(ATA_PRIMARY_IO_BASE + 7, ATA_CMD_READ);
@@ -30,7 +34,7 @@ int ata_read_sector(uint8_t drive, uint32_t lba, uint8_t *buffer) {
     return 0;
 }
 
-int ata_write_sector(uint8_t drive, uint32_t lba, const uint8_t *buffer) {
+static int ata_write_sector(uint8_t drive, uint32_t lba, const uint8_t *buffer) {
     ata_polling();
     ata_select_device(drive, lba);
     outb(ATA_PRIMARY_IO_BASE + 7, ATA_CMD_WRITE);
@@ -43,6 +47,57 @@ int ata_write_sector(uint8_t drive, uint32_t lba, const uint8_t *buffer) {
 
     // flush cache
     outb(ATA_PRIMARY_IO_BASE + 7, 0xE7);
+
+    return 0;
+}
+
+// assume drive 0
+uint32_t ata_read_bytes(struct file *file, uint32_t size, uint8_t *buffer) {
+    uint32_t offset = file->ptr_global;
+    uint32_t start_lba = offset / ATA_SECTOR_SIZE;
+    uint32_t end_lba = (offset + size - 1) / ATA_SECTOR_SIZE;
+    uint32_t sector_offset = offset % ATA_SECTOR_SIZE;
+    uint32_t remaining_bytes = size;
+    uint8_t sector_buffer[ATA_SECTOR_SIZE];
+
+    for (uint32_t lba = start_lba; lba <= end_lba; lba++) {
+        if (ata_read_sector(0, lba, sector_buffer) != 0) {
+            return -1;
+        }
+
+        uint32_t copy_offset = (lba == start_lba) ? sector_offset : 0;
+        uint32_t copy_size = (remaining_bytes < (ATA_SECTOR_SIZE - copy_offset)) ? remaining_bytes : (ATA_SECTOR_SIZE - copy_offset);
+
+        memcpy(buffer, sector_buffer + copy_offset, copy_size);
+
+        buffer += copy_size;
+        remaining_bytes -= copy_size;
+    }
+
+    return 0;
+}
+
+uint32_t ata_write_bytes(struct file *file, uint32_t size, uint8_t *buffer) {
+    uint32_t offset = file->ptr_global;
+    uint32_t start_lba = offset / ATA_SECTOR_SIZE;
+    uint32_t end_lba = (offset + size - 1) / ATA_SECTOR_SIZE;
+    uint32_t sector_offset = offset % ATA_SECTOR_SIZE;
+    uint32_t remaining_bytes = size;
+    uint8_t sector_buffer[ATA_SECTOR_SIZE];
+
+    for (uint32_t lba = start_lba; lba <= end_lba; lba++) {
+        uint32_t write_offset = (lba == start_lba) ? sector_offset : 0;
+        uint32_t write_size = (remaining_bytes < (ATA_SECTOR_SIZE - write_offset)) ? remaining_bytes : (ATA_SECTOR_SIZE - write_offset);
+
+        memcpy(sector_buffer + write_offset, buffer, write_size);
+
+        if (ata_write_sector(0, lba, sector_buffer) != 0) {
+            return -1; // I/O error
+        }
+
+        buffer += write_size;
+        remaining_bytes -= write_size;
+    }
 
     return 0;
 }

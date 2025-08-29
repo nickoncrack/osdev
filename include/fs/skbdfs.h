@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdint.h>
-
+#include <common.h>
+#include <fs/vfs.h>
 
 #define FS_DIR      (1 << 0)
 #define FS_FILE     (1 << 1)
@@ -30,6 +30,9 @@
 #define SEEK_SET 0
 #define SEEK_CUR 1
 #define SEEK_END 2
+
+#define FILE_NORMAL 0
+#define FILE_DEVICE 1
 
 typedef struct {
     uint32_t magic;
@@ -74,8 +77,13 @@ typedef struct {
     char reserved[42];
 } __attribute__((packed)) fs_header_t;
 
-typedef struct {
-    node_t *node;
+typedef struct file {
+    uint8_t type;
+
+    union {
+        node_t *node;
+        struct vfs_device *device;
+    };
 
     uint8_t is_locked;
 
@@ -86,7 +94,12 @@ typedef struct {
 
 node_t *mknode(char *path, int type);
 file_t *fopen(char *path, uint8_t mode);
+void fclose(file_t *file);
+
+node_t **listdir(char *path);
+
+int fseek(file_t *file, uint32_t n, uint8_t mode);
 int fread(file_t *file, uint32_t size, uint8_t *buffer);
 int fwrite(file_t *file, uint32_t size, uint8_t *buffer);
 
-void init_fs();
+uint32_t find_node(char *path, int type, int parent, node_t *dst);
