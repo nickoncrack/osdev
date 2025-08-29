@@ -25,6 +25,8 @@ void irq_handler(regs_t *regs) {
         isr_t handler = interrupt_handlers[regs->int_no];
         handler(regs);
     }
+
+    irq_ack(regs->int_no);
 }
 
 void register_interrupt_handler(uint8_t n, isr_t handler) {
