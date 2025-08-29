@@ -13,15 +13,45 @@
 + Text rendering with custom font support (using [ssfn.h](https://gitlab.com/bztsrc/scalable-font2/-/blob/master/ssfn.h?ref_type=heads)) ✅
 + Simple ATA driver with sector I/O ✅
 + Custom block based filesystem ([skbd-fs](https://github.com/dtxc/skbd-fs)) ✅
-+ Multitasking and ELF loader* ❌
-+ Keyboard and mouse drivers ❌
-+ Graphical interface ❌
++ Multitasking and flat binary loader ✅
++ Keyboard and mouse drivers (wip)
++ Graphical interface :x:
 
-<sub>Multitasking and flat binary loader lowkey complete but im gonna upload them all together when i finish user mode</sub>
 <br>
 
 ## Notes
 + [Notes related to the filesystem](https://github.com/dtxc/skbd-fs)
+
+### User task memory layout (8 MB process)
+```py
+# offset - (0x40000000 + i * 8 MB)
+0x00000000   -> end_code        : code
+end_code*    -> buffer_start**  : heap
+buffer_start -> 0x007DFFFF      : guard page
+0x007E0000   -> 0x007FFFFF      : stack (128 kb)
+```
+
+*page aligned
+<br>
+**Some tasks are not allowed to have a buffer, these tasks end up with a larger heap.
+
+### Building & running
+```sh
+make
+qemu-system-i386 -cdrom build/out/os-image.iso -hda image.bin -serial file:serial.log
+```
+
+### External binary example
+```c
+#include <stdio.h> // fprintf
+#include <stdlib.h> // exit
+
+__attribute__((section(".text._start")))
+void _start() {
+    fprintf(stdio, "Hello world!\n");
+    exit(0);
+}
+```
 
 <br>
 
