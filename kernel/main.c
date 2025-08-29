@@ -153,9 +153,10 @@ void kernel_init(struct mboot_info *mboot_ptr, uint32_t initial_stack) {
 
     create_task((uint32_t) compositor);
 
-    struct process_address_space *addr = load("/bin/gui", 0);
+    struct process_address_space *addr = load("/bin/gui", 1);
     create_user_task(addr);
 
     asm volatile("sti");
     return;
 }
+
