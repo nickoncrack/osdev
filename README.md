@@ -11,7 +11,7 @@
 + Simple ATA driver with sector I/O ✅
 + Custom block based filesystem ([skbd-fs](https://github.com/dtxc/skbd-fs)) ✅
 + Multitasking and flat binary loader ✅
-+ Keyboard and mouse drivers (wip)
++ Keyboard and mouse drivers ✅
 + Graphical interface :x:
 
 <br>
