@@ -23,6 +23,7 @@ prepare:
 	@mkdir -p ./build/out ./build/iso-root ./build/obj
 
 fs_gen: user
+	mkdir -p ./fs_generator/rootfs/bin
 	cp ./user/out/* ./fs_generator/rootfs/bin/
 	cd fs_generator && make
 
@@ -56,4 +57,5 @@ $(ISO): $(ISO_ROOT)/boot/grub/grub.cfg $(ISO_ROOT)/boot/kernel.bin
 	cd fonts && objcopy -O elf32-i386 -B i386 -I binary console.sfn console.o && mv console.o ../build/obj/console.o
 
 clean:
+
 	$(RM) -r ./build
