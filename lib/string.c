@@ -2,22 +2,6 @@
 #include <asm/io.h>
 #include <mm/kheap.h>
 
-// void memset(void *dst, uint8_t c, int n) {
-//     int i, m;
-//     unsigned long *wdst = dst;
-//     long c1 = c + (c << 8) + (c << 16) + (c << 24);
-
-//     for (i = 0, m = n / sizeof(long); i < m; i++) {
-//         *(wdst++) = c1;
-//     }
-
-//     for (i = 0, m = n % sizeof(long); i < m; i++) {
-//         *(((uint8_t *) wdst) + i) = c;
-//     }
-
-//     return;
-// }
-
 void memset(void *dst, uint8_t c, uint32_t n) {
     asm volatile(
         "cld\n"
@@ -274,4 +258,5 @@ int split_string(char *str, char delim, char **tokens, int max_tokens) {
     }
 
     return count;
+
 }
