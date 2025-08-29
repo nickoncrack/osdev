@@ -42,6 +42,8 @@ qemu-system-i386 -cdrom build/out/os-image.iso -hda image.bin -serial file:seria
 ```
 
 ### External binary example
+Binary dependencies are currently hardcoded, so modifying `user/Makefile` is required.
+
 ```c
 #include <stdio.h> // fprintf
 #include <stdlib.h> // exit
