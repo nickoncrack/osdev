@@ -1,5 +1,6 @@
 #define SSFN_CONSOLEBITMAP_TRUECOLOR
 #include <ssfn.h>
+
 #include <multiboot.h>
 
 #include <fs/vfs.h>
@@ -7,6 +8,7 @@
 
 #include <bin.h>
 #include <hw/ata.h>
+#include <hw/mouse.h>
 #include <hw/keybaord.h>
 #include <asm/io.h>
 #include <int/idt.h>
@@ -92,6 +94,7 @@ void init() {
     serial_puts("ACPI initialization completed\n");
     #endif
 
+    mouse_init();
     keyboard_init();
 
     vesa_puts("\nWelcome to ");
@@ -140,7 +143,7 @@ void kernel_init(struct mboot_info *mboot_ptr, uint32_t initial_stack) {
 
     serial_printf("cpu freq ~ %lu Hz\n", freq);
 
-    init_tasking();
+    // init_tasking();
     serial_puts("Early init complete\n");
 
     init_vfs();
@@ -149,13 +152,11 @@ void kernel_init(struct mboot_info *mboot_ptr, uint32_t initial_stack) {
 
     init();
 
-    create_task((uint32_t) compositor);
+    // create_task((uint32_t) compositor);
 
-    struct process_address_space *addr = load("/bin/gui", 1);
-    create_user_task(addr);
+    // struct process_address_space *addr = load("/bin/gui", 1);
+    // create_user_task(addr);
 
     asm volatile("sti");
     return;
 }
-
-
