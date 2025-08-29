@@ -523,66 +523,15 @@ int _fwrite(FILE *fp, file_t *file, uint32_t size, uint8_t *buffer) {
     return 0;
 }
 
-// int main() {
-//     FILE *fp = fopen("image.bin", "wb+");
-//     new_fs(fp, 128 * 1024 * 1024, 1); // 128 MiB
 
-//     // read all binaries from /bin and add them to the filesystem
-//     DIR *dp = opendir("./bin");
-//     struct dirent *ep;
-//     if (dp) {
-//         while ((ep = readdir(dp)) != NULL) {
-//             if (ep->d_name[0] == '.') continue; // skip . and ..
-
-//             char *path = malloc(64);
-//             sprintf(path, "/bin/%s", ep->d_name);
-
-//             char *full_path = malloc(64);
-//             sprintf(full_path, "./bin/%s", ep->d_name);
-
-//             FILE *bin = fopen(full_path, "rb");
-//             if (bin == NULL) {
-//                 printf("Failed to open file: %s\n", path);
-//                 free(path);
-//                 continue;
-//             }
-
-//             file_t *ptr = _fopen(fp, path, FMODE_W);
-
-//             fseek(bin, 0, SEEK_END);
-//             int size = ftell(bin);
-//             fseek(bin, 0, SEEK_SET);
-
-//             uint8_t *buffer = malloc(size);
-//             fread(buffer, size, 1, bin);
-//             _fwrite(fp, ptr, size, buffer);
-
-//             fclose(bin);
-//             free(buffer);
-//             free(path);
-//             free(full_path);
-//             printf("Added file: %s\n", ep->d_name);
-//         }
-//     }
-//     closedir(dp);
-//     fclose(fp);
-
-//     return 0;
-// }
-
-// Helper: safely build destination path on the image.
-// dest_prefix is expected to start with '/'. For root use "/".
 static void build_dest_path(char *out, size_t outlen, const char *dest_prefix, const char *name) {
     if (strcmp(dest_prefix, "/") == 0) {
-        // avoid producing //foo
         snprintf(out, outlen, "/%s", name);
     } else {
         snprintf(out, outlen, "%s/%s", dest_prefix, name);
     }
 }
 
-// Recursively add everything under src_dir (on the host) into the filesystem image
-// at dest_prefix (inside the image). Example: src_dir="./rootfs/usr" dest_prefix="/usr"
 static int add_dir_to_image(FILE *image_fp, const char *src_dir, const char *dest_prefix) {
     DIR *dp = opendir(src_dir);
     if (!dp) {
@@ -612,7 +561,6 @@ static int add_dir_to_image(FILE *image_fp, const char *src_dir, const char *des
         if (S_ISDIR(st.st_mode)) {
             // create directory node in image (ignore errors if it already exists)
             if (mknode(image_fp, dest_path, FS_DIR) != 0) {
-                // It's common that mknode returns error if exists; just warn.
                 fprintf(stderr, "mknode warning (maybe exists): %s\n", dest_path);
             } else {
                 printf("Created directory: %s\n", dest_path);
@@ -621,7 +569,7 @@ static int add_dir_to_image(FILE *image_fp, const char *src_dir, const char *des
             // recurse into the directory
             add_dir_to_image(image_fp, src_path, dest_path);
         } else if (S_ISREG(st.st_mode)) {
-            // regular file -> read and write into the image
+            // regular file: read and write into the image
             FILE *f = fopen(src_path, "rb");
             if (!f) {
                 fprintf(stderr, "Failed to open file: %s\n", src_path);
@@ -676,7 +624,7 @@ static int add_dir_to_image(FILE *image_fp, const char *src_dir, const char *des
             free(buffer);
             printf("Added file: %s -> %s (size=%ld)\n", src_path, dest_path, size);
         } else {
-            // skip other types (symlinks, devices, ...). You can add handling if desired.
+            // skip other types
             fprintf(stderr, "Skipping non-regular file: %s\n", src_path);
         }
     }
@@ -694,8 +642,6 @@ int main(void) {
 
     new_fs(image_fp, 64 * 1024 * 1024, 1); // 64 MiB
 
-    // Start copying everything under ./rootfs into the image's /
-    // Note: entries directly under ./rootfs (e.g. ./rootfs/usr) map to /usr
     add_dir_to_image(image_fp, "./rootfs", "/");
 
     fclose(image_fp);
