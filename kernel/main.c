@@ -1,7 +1,5 @@
 #define SSFN_CONSOLEBITMAP_TRUECOLOR
 #include <ssfn.h>
-
-#include <cpuid.h>
 #include <multiboot.h>
 
 #include <fs/vfs.h>
@@ -159,4 +157,5 @@ void kernel_init(struct mboot_info *mboot_ptr, uint32_t initial_stack) {
     asm volatile("sti");
     return;
 }
+
 
